@@ -61,10 +61,16 @@ async def set_timer(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"❌ កើតមានបញ្ហា Error: `{str(e)}`", parse_mode='Markdown')
 
 if __name__ == '__main__':
-    app = ApplicationBuilder().token(TOKEN).build()
+    app = (
+        ApplicationBuilder()
+        .token(TOKEN)
+        .read_timeout(30)
+        .connect_timeout(30)
+        .build()
+    )
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("set", set_timer))
 
     print("Bot កំពុងដំណើរការ...")
-    app.run_polling()
+    app.run_polling(drop_pending_updates=True)
