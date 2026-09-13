@@ -1,10 +1,12 @@
+import os
 import logging
 import datetime
 import pytz
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-TOKEN = "8859001589:AAFZAp8ct8xbZFEfATt2kF7TLW-HL1tB1TA"
+# ស្រូបយក Token ពី Environment Variable (ឬប្រើ Token ថ្មីជា Default)
+TOKEN = os.getenv("BOT_TOKEN", "8859001589:AAHhxe_7Xz9ETJO-psGIOxqrpW1oKrmyr64")
 
 # បង្ហាញ Log ពេលមាន Error
 logging.basicConfig(
