@@ -6,7 +6,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import datetime
 import pytz
 
-# បង្កើត Web Server តូចមួយ
+# បង្កើត Web Server តូចមួយសម្រាប់ Keep-Alive
 web_app = Flask(__name__)
 
 @web_app.route('/')
@@ -40,7 +40,9 @@ async def set_timer(update: Update, context: ContextTypes.DEFAULT_TYPE):
         hours = int(time_parts[0])
         minutes = int(time_parts[1])
 
-        target_time = datetime.time(hour=hours, minute=minutes)
+        # កំណត់ Timezone Cambodia សម្រាប់ Time Object
+        cambodia_tz = pytz.timezone('Asia/Phnom_Penh')
+        target_time = datetime.time(hour=hours, minute=minutes, tzinfo=cambodia_tz)
 
         context.job_queue.run_daily(
             send_reminder,
@@ -58,12 +60,10 @@ if __name__ == '__main__':
     # រត់ Web Server លើ Thread ដាច់ដោយឡែក
     threading.Thread(target=run_flask, daemon=True).start()
 
-    cambodia_tz = pytz.timezone('Asia/Phnom_Penh')
-    
+    # បង្កើត Application ដោយគ្មាន `.timezone()`
     app = (
         ApplicationBuilder()
         .token(TOKEN)
-        .timezone(cambodia_tz)
         .read_timeout(30)
         .connect_timeout(30)
         .build()
