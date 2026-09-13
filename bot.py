@@ -1,32 +1,31 @@
 import os
-import logging
-import datetime
-import pytz
+import threading
+from flask import Flask
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+import datetime
+import pytz
 
-# ស្រូបយក Token ពី Environment Variable (ឬប្រើ Token ថ្មីជា Default)
-TOKEN = os.getenv("BOT_TOKEN", "8859001589:AAHhxe_7Xz9ETJO-psGIOxqrpW1oKrmyr64")
+# បង្កើត Web Server តូចមួយ
+web_app = Flask(__name__)
 
-# បង្ហាញ Log ពេលមាន Error
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
+@web_app.route('/')
+def home():
+    return "Bot is alive!"
+
+def run_flask():
+    port = int(os.environ.get("PORT", 10000))
+    web_app.run(host="0.0.0.0", port=port)
+
+# --- កូដ Telegram Bot ---
+TOKEN = os.environ.get("BOT_TOKEN")
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("ជម្រាបសួរ! ខ្ញុំជា Bot រំលឹកការងារ។ ប្រើបញ្ជា `/set HH:MM សារ` ដើម្បីកំណត់ម៉ោងរំលឹក។")
 
 async def send_reminder(context: ContextTypes.DEFAULT_TYPE):
     job = context.job
-    await context.bot.send_message(chat_id=job.chat_id, text=job.data)
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "ជម្រាបសួរ! ខ្ញុំជា Reminder Bot របស់អ្នក។\n\n"
-        "របៀបប្រើប្រាស់៖\n"
-        "វាយ `/set HH:MM សាររំលឹក` ឧទាហរណ៍៖\n"
-        "`/set 07:00 ដល់ពេលត្រូវក្រោកពីគេងហើយ`\n"
-        "`/set 11:00 ដល់ពេលត្រូវឈប់លេងទូរស័ព្ទហើយ`",
-        parse_mode='Markdown'
-    )
+    await context.bot.send_message(chat_id=job.chat_id, text=f"⏰ រំលឹក៖ {job.data}")
 
 async def set_timer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -37,15 +36,12 @@ async def set_timer(update: Update, context: ContextTypes.DEFAULT_TYPE):
         time_str = context.args[0]
         message = " ".join(context.args[1:]) if len(context.args) > 1 else "ដល់ពេលត្រូវធ្វើការងារហើយ!"
 
-        # បំបែកម៉ោង និងនាទី
         time_parts = time_str.split(':')
         hours = int(time_parts[0])
         minutes = int(time_parts[1])
 
-        # បង្កើត target_time ដោយមិនបាច់ដាក់ tzinfo
         target_time = datetime.time(hour=hours, minute=minutes)
 
-        # បន្ថែម Task ចូល Job Queue
         context.job_queue.run_daily(
             send_reminder,
             time=target_time,
@@ -59,12 +55,15 @@ async def set_timer(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"❌ កើតមានបញ្ហា Error: `{str(e)}`", parse_mode='Markdown')
 
 if __name__ == '__main__':
+    # រត់ Web Server លើ Thread ដាច់ដោយឡែក
+    threading.Thread(target=run_flask, daemon=True).start()
+
     cambodia_tz = pytz.timezone('Asia/Phnom_Penh')
     
     app = (
         ApplicationBuilder()
         .token(TOKEN)
-        .timezone(cambodia_tz)  # <--- បន្ថែមជួរនេះ ដើម្បីកំណត់ Timezone កម្ពុជា
+        .timezone(cambodia_tz)
         .read_timeout(30)
         .connect_timeout(30)
         .build()
