@@ -42,9 +42,8 @@ async def set_timer(update: Update, context: ContextTypes.DEFAULT_TYPE):
         hours = int(time_parts[0])
         minutes = int(time_parts[1])
 
-        # កំណត់ Timezone Cambodia
-        cambodia_tz = pytz.timezone('Asia/Phnom_Penh')
-        target_time = datetime.time(hour=hours, minute=minutes, tzinfo=cambodia_tz)
+        # បង្កើត target_time ដោយមិនបាច់ដាក់ tzinfo
+        target_time = datetime.time(hour=hours, minute=minutes)
 
         # បន្ថែម Task ចូល Job Queue
         context.job_queue.run_daily(
@@ -57,13 +56,15 @@ async def set_timer(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"✅ បានកំណត់ការរំលឹកនៅម៉ោង **{time_str}** រៀងរាល់ថ្ងៃ!\nសារ៖ {message}", parse_mode='Markdown')
 
     except Exception as e:
-        # បង្ហាញ Error ពិតប្រាកដទៅ Telegram តែម្តង ដើម្បីងាយស្រួលដឹង
         await update.message.reply_text(f"❌ កើតមានបញ្ហា Error: `{str(e)}`", parse_mode='Markdown')
 
 if __name__ == '__main__':
+    cambodia_tz = pytz.timezone('Asia/Phnom_Penh')
+    
     app = (
         ApplicationBuilder()
         .token(TOKEN)
+        .timezone(cambodia_tz)  # <--- បន្ថែមជួរនេះ ដើម្បីកំណត់ Timezone កម្ពុជា
         .read_timeout(30)
         .connect_timeout(30)
         .build()
